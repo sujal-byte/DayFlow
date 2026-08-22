@@ -7,6 +7,9 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Enable shutdown hooks so onModuleDestroy in PrismaService and other providers is called
+  app.enableShutdownHooks();
+
   // Enable validation pipe globally for class-validator
   app.useGlobalPipes(
     new ValidationPipe({

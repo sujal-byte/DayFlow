@@ -3,90 +3,64 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { Role } from '@prisma/client';
 
 export interface JwtPayload {
-  sub: string;
   id: string;
   email: string;
   role: Role;
+  sub?: string;
 }
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-  ) {}
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) { }
 
-  /**
-   * Register a new user
-   * - Checks if user already exists (throws ConflictException)
-   * - Hashes password with bcrypt (salt rounds: 10)
-   * - Saves user via PrismaService
-   * - Returns user data excluding the password
-   */
-  async register(dto: RegisterDto) {
-    const normalizedEmail = dto.email.toLowerCase().trim();
-
-    // Check if the user already exists
+  async register(dto: any) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { email: dto.email },
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException('User with this email already exists.');
     }
 
-    // Hash the password with bcrypt (salt rounds: 10)
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Save to the database
-    const user = await this.prisma.user.create({
+    const newUser = await this.prisma.user.create({
       data: {
-        email: normalizedEmail,
+        email: dto.email,
         password: hashedPassword,
-        firstName: dto.firstName.trim(),
-        lastName: dto.lastName.trim(),
+        firstName: dto.firstName,
+        lastName: dto.lastName,
       },
     });
 
-    // Exclude password from the returned object
-    const { password, ...userWithoutPassword } = user;
+    const { password, ...userWithoutPassword } = newUser;
     return userWithoutPassword;
   }
 
-  /**
-   * Log in an existing user
-   * - Finds user by email
-   * - Compares password with bcrypt (throws UnauthorizedException if invalid)
-   * - Generates and returns a signed JWT containing id, email, and role
-   */
-  async login(dto: LoginDto) {
-    const normalizedEmail = dto.email.toLowerCase().trim();
-
-    // Find user by email
+  async login(dto: any) {
     const user = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { email: dto.email },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Compare passwords with bcrypt
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate JWT payload containing id, email, and role
     const payload: JwtPayload = {
       sub: user.id,
       id: user.id,
@@ -95,12 +69,11 @@ export class AuthService {
     };
 
     const token = await this.jwtService.signAsync(payload);
-
-    // Exclude password from the returned user object
     const { password, ...userWithoutPassword } = user;
 
     return {
       access_token: token,
+      accessToken: token,
       user: userWithoutPassword,
     };
   }
