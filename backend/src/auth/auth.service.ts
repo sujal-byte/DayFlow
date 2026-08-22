@@ -32,14 +32,16 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const employeeId = dto.employeeId?.trim() || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newUser = await this.prisma.user.create({
       data: {
         email: dto.email,
+        employeeId: employeeId,
         password: hashedPassword,
         firstName: dto.firstName,
         lastName: dto.lastName,
-      },
+      } as any,
     });
 
     const { password, ...userWithoutPassword } = newUser;

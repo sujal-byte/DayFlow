@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../features/auth/AuthProvider'
 import './AdminDashboard.css'
 
 type Tab = 'Overview' | 'Employees' | 'Attendance' | 'Leave approvals' | 'Payroll'
@@ -15,9 +17,24 @@ const leaveRequests = [
 ]
 
 export default function AdminDashboard() {
+  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const [requests, setRequests] = useState(leaveRequests)
   const [notice, setNotice] = useState('')
+
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName || ''}`.trim()
+    : user?.email?.split('@')[0] || 'Admin'
+
+  const initials = user?.firstName
+    ? `${user.firstName[0]}${user.lastName ? user.lastName[0] : ''}`.toUpperCase()
+    : 'AD'
+
+  const handleSignOut = () => {
+    signOut()
+    navigate('/signin')
+  }
 
   const resolveRequest = (name: string, action: 'approved' | 'rejected') => {
     setRequests((current) => current.filter((request) => request.name !== name))
@@ -28,11 +45,11 @@ export default function AdminDashboard() {
     <aside className="admin-sidebar">
       <a className="admin-brand" href="#overview"><span className="admin-brand-mark">D</span><span>dayflow</span><small>ADMIN</small></a>
       <nav aria-label="Admin navigation">{tabs.map((tab) => <button className={`admin-nav-item ${activeTab === tab.label ? 'active' : ''}`} key={tab.label} onClick={() => setActiveTab(tab.label)}><span>{tab.icon}</span>{tab.label}</button>)}</nav>
-      <div className="admin-sidebar-footer"><button onClick={() => setNotice('Settings page opened.')}>⚙ <span>Settings</span></button><div className="admin-user"><div className="admin-avatar avatar-green">NP</div><div><strong>Neha Patel</strong><span>HR Manager</span></div><button aria-label="Open account menu">•••</button></div></div>
+      <div className="admin-sidebar-footer"><button onClick={handleSignOut} title="Sign Out">⎋ <span>Sign Out</span></button><div className="admin-user"><div className="admin-avatar avatar-green">{initials}</div><div><strong>{displayName}</strong><span>{user?.email}</span></div><button onClick={handleSignOut} aria-label="Sign out" title="Sign out">•••</button></div></div>
     </aside>
     <section className="admin-content" id="overview">
-      <header className="admin-topbar"><button className="admin-mobile-menu" aria-label="Open navigation">☰</button><div className="admin-top-actions"><button className="admin-search" onClick={() => setNotice('Employee search opened.')}>⌕ <span>Search employees...</span><kbd>⌘ K</kbd></button><button className="admin-notification" aria-label="View notifications">♧<i /></button><button className="admin-avatar avatar-green">NP</button></div></header>
-      <div className="admin-heading"><div><p className="admin-eyebrow">FRIDAY, 22 AUGUST</p><h1>Good morning, Neha <span>👋</span></h1><p>Here’s an overview of your team today.</p></div><button className="admin-primary" onClick={() => setNotice('Add employee form opened.')}>＋ Add employee</button></div>
+      <header className="admin-topbar"><button className="admin-mobile-menu" aria-label="Open navigation">☰</button><div className="admin-top-actions"><button className="admin-search" onClick={() => setNotice('Employee search opened.')}>⌕ <span>Search employees...</span><kbd>⌘ K</kbd></button><button className="admin-notification" aria-label="View notifications">♧<i /></button><button className="admin-avatar avatar-green" onClick={handleSignOut} title="Sign Out">{initials}</button></div></header>
+      <div className="admin-heading"><div><p className="admin-eyebrow">DAYFLOW ADMIN</p><h1>Good day, {displayName} <span>👋</span></h1><p>Here’s an overview of your team today.</p></div><button className="admin-primary" onClick={() => setNotice('Add employee form opened.')}>＋ Add employee</button></div>
       {notice && <div className="admin-notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Dismiss message">×</button></div>}
       <section className="admin-stat-grid" aria-label="Organisation summary">
         <Stat icon="♙" label="TOTAL EMPLOYEES" value="124" trend="+8 this month" color="violet" />

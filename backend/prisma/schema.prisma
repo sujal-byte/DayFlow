@@ -41,6 +41,7 @@ enum LeaveType {
 
 model User {
   id            String   @id @default(uuid())
+  employeeId    String?
   email         String   @unique
   password      String   // Remember to hash this with bcrypt before saving!
   role          Role     @default(EMPLOYEE)
@@ -121,4 +122,10 @@ model qr_tokens {
   expires_at  DateTime
   is_consumed Boolean  @default(false)
   created_at  DateTime @default(now())
+}
+
+model playing_with_neon {
+  id    Int     @id @default(autoincrement())
+  name  String
+  value Float?
 }

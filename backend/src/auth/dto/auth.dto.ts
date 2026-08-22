@@ -35,6 +35,14 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty({ message: 'Last name is required' })
   lastName: string;
+
+  @ApiProperty({
+    example: 'EMP-0001',
+    description: 'Unique employee ID (e.g. EMP-0001)',
+    required: false,
+  })
+  @IsString()
+  employeeId?: string;
 }
 
 export class LoginDto {

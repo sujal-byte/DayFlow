@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../features/auth/AuthProvider'
 import './EmployeeDashboard.css'
 
 type NavItem = 'Dashboard' | 'Attendance' | 'Leave requests' | 'My profile'
@@ -15,10 +17,25 @@ const activities = [
 ]
 
 export default function EmployeeDashboard() {
+  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
   const [activeNav, setActiveNav] = useState<NavItem>('Dashboard')
   const [checkedInAt, setCheckedInAt] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const today = useMemo(() => new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()), [])
+
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName || ''}`.trim()
+    : user?.email?.split('@')[0] || 'Employee'
+
+  const initials = user?.firstName
+    ? `${user.firstName[0]}${user.lastName ? user.lastName[0] : ''}`.toUpperCase()
+    : 'EM'
+
+  const handleSignOut = () => {
+    signOut()
+    navigate('/signin')
+  }
 
   const handleAttendance = () => {
     if (checkedInAt) { setNotice('Checked out successfully. Total time today: 0h 00m.'); setCheckedInAt(null); return }
@@ -30,12 +47,12 @@ export default function EmployeeDashboard() {
     <aside className="sidebar">
       <a className="brand" href="#dashboard" aria-label="Dayflow dashboard"><span className="brand-mark">D</span><span>dayflow</span></a>
       <nav aria-label="Primary navigation">{navItems.map((item) => <button className={`nav-item ${activeNav === item.label ? 'active' : ''}`} key={item.label} onClick={() => setActiveNav(item.label)}><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}</nav>
-      <button className="help-link" onClick={() => setNotice('Help centre opened. An HR representative will be happy to assist you.')}>?<span>Help & support</span></button>
-      <div className="profile-mini"><div className="avatar">AS</div><div><strong>Ananya Sharma</strong><span>Product Designer</span></div><button className="more-button" aria-label="Open account menu">•••</button></div>
+      <button className="help-link" onClick={handleSignOut} title="Sign Out">⎋<span>Sign Out</span></button>
+      <div className="profile-mini"><div className="avatar">{initials}</div><div><strong>{displayName}</strong><span>{user?.email}</span></div><button onClick={handleSignOut} className="more-button" aria-label="Sign out" title="Sign out">•••</button></div>
     </aside>
     <section className="content" id="dashboard">
-      <header className="topbar"><button className="mobile-brand" aria-label="Open menu">☰</button><div className="topbar-actions"><button className="icon-button" aria-label="View notifications">♧<span className="notification-dot" /></button><button className="top-avatar" aria-label="Open profile">AS</button></div></header>
-      <div className="page-heading"><div><p className="eyebrow">{today}</p><h1>Good morning, Ananya <span aria-hidden="true">👋</span></h1><p className="subtitle">Here’s what’s happening with your workday.</p></div><button className="outline-button" onClick={() => setNotice('Your profile page is ready to open.')}>View profile <span>→</span></button></div>
+      <header className="topbar"><button className="mobile-brand" aria-label="Open menu">☰</button><div className="topbar-actions"><button className="icon-button" aria-label="View notifications">♧<span className="notification-dot" /></button><button className="top-avatar" onClick={handleSignOut} title="Sign Out" aria-label="Open profile">{initials}</button></div></header>
+      <div className="page-heading"><div><p className="eyebrow">{today}</p><h1>Good day, {displayName} <span aria-hidden="true">👋</span></h1><p className="subtitle">Here’s what’s happening with your workday.</p></div><button className="outline-button" onClick={handleSignOut}>Sign Out <span>→</span></button></div>
       {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Dismiss message">×</button></div>}
       <section className="overview-grid" aria-label="Workday overview">
         <article className="attendance-card"><div className="card-label"><span className="card-icon indigo">◷</span> TODAY’S ATTENDANCE</div><div className="attendance-main"><div><h2>{checkedInAt ? 'You’re checked in' : 'Ready to start?'}</h2><p>{checkedInAt ? `Checked in at ${checkedInAt}` : 'Check in to begin your workday.'}</p></div><span className={`status-pill ${checkedInAt ? 'present' : 'not-started'}`}>{checkedInAt ? 'Present' : 'Not started'}</span></div><button className={`attendance-button ${checkedInAt ? 'checkout' : ''}`} onClick={handleAttendance}><span>{checkedInAt ? '↗' : '↘'}</span>{checkedInAt ? 'Check out' : 'Check in'}</button></article>
