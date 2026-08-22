@@ -18,6 +18,9 @@ Kairos is a streamlined internal management tool. It handles authentication, rol
 - **Backend & Auth:** Next.Js, Prisma 7
 - **Database:** PostgreSQL, Neon.tech
 
+## What to expect unique:
+- **Dynamic QR Code** - For attendance login, The QR code would be generated on the website and a scanner would be placed at the entrance where the dynamic qr code will be scanned. The backend is already prepared only to be implemented on the frontend which wasnt possible due to time constraints.
+
 ## Getting Started
 
 To get a local copy up and running, follow these steps.
