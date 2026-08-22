@@ -1,9 +1,23 @@
+import 'dotenv/config';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable shutdown hooks so onModuleDestroy in PrismaService and other providers is called
+  app.enableShutdownHooks();
+
+  // Enable validation pipe globally for class-validator
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   // CRITICAL: Enable CORS so your React app on port 5173 can talk to this API
   app.enableCors();
