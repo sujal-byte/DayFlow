@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -114,4 +113,12 @@ model AuditLog {
   details   Json?    
   
   createdAt DateTime @default(now())
+}
+
+model qr_tokens {
+  token_hash  String   @id
+  user_id     String
+  expires_at  DateTime
+  is_consumed Boolean  @default(false)
+  created_at  DateTime @default(now())
 }
