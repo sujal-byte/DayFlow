@@ -1,4 +1,4 @@
-# Kairos
+# Kairos - “Be there. Be now.”
 
 > A role-based workspace application featuring dedicated admin and employee environments.
 
