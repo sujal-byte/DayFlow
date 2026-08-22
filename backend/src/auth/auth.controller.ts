@@ -1,34 +1,62 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBadRequestResponse,
+  ApiConflictResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { LoginDto, RegisterDto } from './dto/auth.dto';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('register')
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: 'Registers a new employee/admin account and returns user details without the password.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User successfully registered.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input payload or validation error.',
+  })
+  @ApiConflictResponse({
+    description: 'User with this email already exists.',
+  })
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Login user',
+    description: 'Authenticates user credentials and returns a JWT access token along with user profile details.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User authenticated successfully. Returns JWT access token and user info.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input payload or validation error.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid email or password.',
+  })
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 }
