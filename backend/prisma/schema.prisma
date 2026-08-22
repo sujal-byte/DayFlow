@@ -1,13 +1,116 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// backend/prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS (Strict types save you from bugs during the hackathon)
+// -----------------------------------------------------------------------------
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  PAID
+  SICK
+  UNPAID
+}
+
+// -----------------------------------------------------------------------------
+// MODELS
+// -----------------------------------------------------------------------------
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String   // Remember to hash this with bcrypt before saving!
+  role          Role     @default(EMPLOYEE)
+  
+  // Profile Details
+  firstName     String
+  lastName      String
+  phone         String?
+  address       String?
+  profilePicUrl String?
+  salary        Float?   // Optional: only visible to Admin or the user
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations (Prisma handles linking these automatically)
+  attendances    Attendance[]
+  leaveRequests  LeaveRequest[] @relation("EmployeeLeaves")
+  approvedLeaves LeaveRequest[] @relation("AdminApprovals")
+  auditLogs      AuditLog[]
+}
+
+model Attendance {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  date      DateTime         @db.Date
+  checkIn   DateTime?
+  checkOut  DateTime?
+  status    AttendanceStatus @default(PRESENT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Crucial: Prevents a user from having two attendance records on the same day
+  @@unique([userId, date])
+}
+
+model LeaveRequest {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation("EmployeeLeaves", fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        LeaveType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+
+  // Tracks which Admin approved or rejected it
+  approverId  String?
+  approver    User?       @relation("AdminApprovals", fields: [approverId], references: [id])
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // e.g., "CREATE", "UPDATE", "DELETE", "APPROVE_LEAVE"
+  entity    String   // e.g., "LeaveRequest", "User", "Attendance"
+  entityId  String   // The ID of the record that was changed
+  
+  // Tracks who performed the action (Admin or Employee)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Stores the actual changes (e.g., old status vs new status)
+  details   Json?    
+  
+  createdAt DateTime @default(now())
 }
